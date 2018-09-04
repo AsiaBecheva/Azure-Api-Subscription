@@ -1,108 +1,97 @@
 ﻿namespace ASE.Server.Controllers
 {
-    using ASE.Data.Contracts;
-    using ASE.Models;
-    using ASE.Models.DTOModels;
     using Microsoft.AspNetCore.Mvc;
-    using System;
+
+    using ASE.Data.Contracts;
+    using ASE.Models.DTOModels;
+    using ASE.Common;
+    using ASE.Server.Services.Contracts;
     using System.Linq;
-    using System.Net;
-    using System.Collections.Specialized;
-    using System.Text;
+    using Microsoft.AspNetCore.Http;
 
     [Route("api/[controller]/[action]")]
     [ApiController]
     public class AccountController : ControllerBase
     {
         private readonly IUnitOfWork data;
+        private readonly IAccountService accountService;
+        private readonly IHttpContextAccessor contextAccessor;
 
-        public AccountController(IUnitOfWork data)
+        public AccountController(IUnitOfWork data,
+            IAccountService accountService,
+            IHttpContextAccessor contextAccessor)
         {
             this.data = data;
+            this.accountService = accountService;
+            this.contextAccessor = contextAccessor;
         }
         
         [HttpPost]
-        public ActionResult Token(TokenRequestModel model)
+        public ActionResult Login(LoginDTO model)
         {
             if (ModelState.IsValid)
             {
-                var azureUrl = "https://login.microsoftonline.com/" +  model.TenantId + "/oauth2/token";
+                var user = this.accountService.TakeUser(model);
 
-                using (WebClient client = new WebClient())
+                if (user == null)
                 {
-                    client.Headers[HttpRequestHeader.ContentType] = "application/x-www-form-urlencoded";
-
-                    var paramCollection = new NameValueCollection();
-                    paramCollection.Add("grant_type", model.GrantType);
-                    paramCollection.Add("client_id", model.ClientId);
-                    paramCollection.Add("client_secret", model.ClientSecret);
-                    paramCollection.Add("resource", model.Resource);
-
-                    byte[] responceBytes =  client.UploadValues(azureUrl, "POST", paramCollection);
-                    string resonceBody = Encoding.UTF8.GetString(responceBytes);
-                    
-                    return this.Ok(resonceBody);
+                    return this.BadRequest("User or password is invalid!");
+                }        
+              
+                if (user.Password != model.Password.GenerateHashWithSalt("@%!"))
+                {
+                    return this.BadRequest("User or password is invalid!");
                 }
+
+                this.contextAccessor.HttpContext.Response.Cookies.Append("UserId", user.Id.ToString());
+
+                var subscriptions = this.data
+                    .Subscriptions
+                    .All()
+                    .ToList();
+
+                if (subscriptions.Count == 0)
+                {
+                    return this.Ok($"Your subscriptions - {subscriptions.Count}");
+                }
+
+                return this.Ok(subscriptions);
             }
             else
             {
-                return this.BadRequest("Invalid attempt!");
+                return this.BadRequest("User or password is invalid!");
             }
         }
 
         [HttpPost]
-        public ActionResult Login(LoginViewModel model, string returnUrl)
+        public ActionResult Register(RegisterDTO model)
         {
             if (ModelState.IsValid)
             {
-                var user = this.data.Users
-                    .All()
-                    .Where(x => x.Email == model.Email)
-                    .FirstOrDefault();
+                var user = accountService.CheckUserByEmail(model);
 
-                if(user == null)
+                if (user != null)
                 {
-                    return this.BadRequest("Invalid login!");
+                    return this.BadRequest("This user is already registered!");
                 }
 
-                var password = user.Password;
-                if (model.Password != user.Password)
+                if (string.IsNullOrEmpty(model.Email) || string.IsNullOrWhiteSpace(model.Email))
                 {
-                    return this.BadRequest("Invalid password!");
+                    return this.BadRequest("The Email field is not a valid e-mail address.");
                 }
 
-                return this.Ok(model);
-            }
-            else
-            {
-                return this.BadRequest("Invalid login data!");
-            }
-        }
-
-        [HttpPost]
-        public ActionResult Register(RegisterViewModel model)
-        {
-
-            if (ModelState.IsValid)
-            {
-                var checkUser = this.data
-                    .Users
-                    .All()
-                    .Where(x => x.Email == model.Email)
-                    .FirstOrDefault();
-
-                if (checkUser != null)
+                if (!model.Email.IsValidMail())
                 {
-                    return this.BadRequest("Already registered email!");
+                    return this.BadRequest("The Email field is not a valid e-mail address.");
                 }
 
-                var userForRegister = new User();
-                userForRegister.Email = model.Email;
-                userForRegister.Password = model.Password;
-                this.data.Users.Add(userForRegister);
-                this.data.SaveChanges();
+                if (string.IsNullOrEmpty(model.Password) || string.IsNullOrWhiteSpace(model.Password)) {
+                    return this.BadRequest("Password can not be empty string!");
+                }
 
-                return this.Redirect("Here will be the URL for login page!");
+                this.accountService.RegisterAndSaveUser(model);
+
+                return this.Ok("User was registered!");
             }
             else
             {
@@ -115,7 +104,7 @@
         {
             //Delete ApplicatonCookie
 
-            return this.Redirect("www.asd.com");
+            return this.Redirect("www.bulpros.com");
         }
     }
 }

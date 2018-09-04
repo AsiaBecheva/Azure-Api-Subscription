@@ -3,14 +3,16 @@ using ASE.Data;
 using Microsoft.EntityFrameworkCore;
 using Microsoft.EntityFrameworkCore.Infrastructure;
 using Microsoft.EntityFrameworkCore.Metadata;
+using Microsoft.EntityFrameworkCore.Migrations;
 using Microsoft.EntityFrameworkCore.Storage.ValueConversion;
 
 namespace ASE.Data.Migrations
 {
     [DbContext(typeof(AzureApiSubDbContext))]
-    partial class AzureApiSubDbContextModelSnapshot : ModelSnapshot
+    [Migration("20180903115701_BearerToken_become_Alias")]
+    partial class BearerToken_become_Alias
     {
-        protected override void BuildModel(ModelBuilder modelBuilder)
+        protected override void BuildTargetModel(ModelBuilder modelBuilder)
         {
 #pragma warning disable 612, 618
             modelBuilder
@@ -38,8 +40,6 @@ namespace ASE.Data.Migrations
 
                     b.Property<string>("Resource")
                         .IsRequired();
-
-                    b.Property<string>("SubscriptionAzureId");
 
                     b.Property<string>("TenantId")
                         .IsRequired();

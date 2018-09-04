@@ -16,7 +16,9 @@
 
         public string Resource { get; set; } = Constants.Resource;
 
-        public string BearerToken { get; set; }
+        public string Alias { get; set; }
+
+        public string SubscriptionAzureId { get; set; }
 
         public int UserId { get; set; }
 

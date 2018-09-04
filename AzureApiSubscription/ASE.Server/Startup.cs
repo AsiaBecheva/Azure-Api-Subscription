@@ -12,6 +12,8 @@
     using Microsoft.AspNetCore.Http;
     using ASE.Data;
     using Microsoft.EntityFrameworkCore;
+    using ASE.Server.Services;
+    using ASE.Server.Services.Contracts;
 
     public class Startup
     {
@@ -30,12 +32,15 @@
             services.AddAuthentication(AzureADDefaults.BearerAuthenticationScheme)
                 .AddAzureADBearer(options => Configuration.Bind("AzureAd", options));
             services.AddRouting(r => r.LowercaseUrls = true);
-            services.TryAddTransient<IUnitOfWork, UnitOfWork>();
-            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
 
-            //services.AddDbContext<AzureApiSubDbContext>(options =>
-            //    options.UseSqlServer(Configuration.GetConnectionString("AzureSuscription")));
-            services.AddDbContext<AzureApiSubDbContext>(options => options.UseSqlServer(connection, x => x.MigrationsAssembly("ASE.Data")));
+            services.TryAddTransient<IUnitOfWork, UnitOfWork>();
+            services.TryAddTransient<ISubscriptionService, SubscriptionService>();
+            services.TryAddTransient<IAccountService, AccountService>();
+            services.TryAddTransient<IHttpContextAccessor, HttpContextAccessor>();
+
+            services.AddMvc().SetCompatibilityVersion(CompatibilityVersion.Version_2_1);
+            services.AddDbContext<AzureApiSubDbContext>(options =>
+            options.UseSqlServer(connection, x => x.MigrationsAssembly("ASE.Data")));
 
         }
 

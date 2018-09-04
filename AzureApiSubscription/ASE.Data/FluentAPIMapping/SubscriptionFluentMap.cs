@@ -20,7 +20,7 @@
             builder.Property(s => s.ClientId).IsRequired();
             builder.Property(s => s.ClientSecret).IsRequired();
             builder.Property(s => s.Resource).IsRequired();
-            builder.Property(s => s.BearerToken).IsRequired();
+            builder.Property(s => s.Alias).IsRequired();
 
             builder.HasOne(s => s.User)
                                      .WithMany(u => u.Subscriptions)
