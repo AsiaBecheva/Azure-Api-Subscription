@@ -6,8 +6,6 @@
     using ASE.Models.DTOModels;
     using ASE.Common;
     using ASE.Server.Services.Contracts;
-    using System.Linq;
-    using Microsoft.AspNetCore.Http;
 
     [Route("api/[controller]/[action]")]
     [ApiController]
@@ -15,15 +13,12 @@
     {
         private readonly IUnitOfWork data;
         private readonly IAccountService accountService;
-        private readonly IHttpContextAccessor contextAccessor;
 
         public AccountController(IUnitOfWork data,
-            IAccountService accountService,
-            IHttpContextAccessor contextAccessor)
+            IAccountService accountService)
         {
             this.data = data;
             this.accountService = accountService;
-            this.contextAccessor = contextAccessor;
         }
         
         [HttpPost]
@@ -31,24 +26,21 @@
         {
             if (ModelState.IsValid)
             {
-                var user = this.accountService.TakeUser(model);
+                var user = this.accountService.GetUserByEmail(model);
 
                 if (user == null)
                 {
                     return this.BadRequest("User or password is invalid!");
                 }        
               
-                if (user.Password != model.Password.GenerateHashWithSalt("@%!"))
+                if (user.Password != model.Password.GenerateHashWithSalt())
                 {
                     return this.BadRequest("User or password is invalid!");
                 }
 
-                this.contextAccessor.HttpContext.Response.Cookies.Append("UserId", user.Id.ToString());
+                this.accountService.AddCookieUser(user);
 
-                var subscriptions = this.data
-                    .Subscriptions
-                    .All()
-                    .ToList();
+                var subscriptions = this.accountService.GetUserSubscriptions(model);
 
                 if (subscriptions.Count == 0)
                 {
@@ -68,7 +60,7 @@
         {
             if (ModelState.IsValid)
             {
-                var user = accountService.CheckUserByEmail(model);
+                var user = accountService.GetUserByEmail(model);
 
                 if (user != null)
                 {
@@ -102,7 +94,7 @@
         [HttpPost]
         public ActionResult Logout()
         {
-            //Delete ApplicatonCookie
+            this.accountService.DeleteCookieUser();
 
             return this.Redirect("www.bulpros.com");
         }

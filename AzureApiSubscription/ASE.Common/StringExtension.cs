@@ -8,8 +8,9 @@ namespace ASE.Common
 
     public static class StringExtension 
     {
-        public static string GenerateHashWithSalt(this string enteredPassword, string enteredSalt)
+        public static string GenerateHashWithSalt(this string enteredPassword)
         {
+            string enteredSalt = "@%!";
             string sHashWithSalt = enteredPassword + enteredSalt;
             byte[] saltedHashBytes = Encoding.UTF8.GetBytes(sHashWithSalt);
             HashAlgorithm algorithm = new SHA256Managed();

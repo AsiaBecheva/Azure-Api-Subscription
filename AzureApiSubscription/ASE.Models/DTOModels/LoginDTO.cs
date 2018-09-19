@@ -2,7 +2,9 @@
 {
     using System.ComponentModel.DataAnnotations;
 
-    public class LoginDTO
+    using ASE.Models.Contracts;
+
+    public class LoginDTO : IRegisterLoginDTO
     {
         [Required]
         [EmailAddress]
